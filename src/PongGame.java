@@ -1,55 +1,69 @@
-import javax.swing.JFrame;
-import javax.sound.sampled.*;
-import java.io.InputStream;
-import java.io.IOException;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
-public class PongGame {
-    public static void main(String[] args) {
-        // Ana pencereyi oluştur
-        JFrame frame = new JFrame("Pong Game");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Pencere kapanınca program bitsin
-        frame.setResizable(false); // Boyut değişmesin
-        frame.setSize(800, 600); // Pencere boyutu
-        frame.add(new GamePanel()); // Oyun panelini ekle
-        frame.setLocationRelativeTo(null); // Ortada aç
-        frame.setVisible(true); // Göster
+public class PongGame extends JFrame {
+    private LoginPanel loginPanel;
+    private GamePanel gamePanel;
 
-        try {
-            // Ses dosyasını kaynaklardan yükle
-            InputStream soundStream = PongGame.class.getResourceAsStream("/Sounds/your-sound-file.wav");
+    public PongGame() {
+        setTitle("Pong Game");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 600);
+        setLocationRelativeTo(null);
 
-            // Ses dosyasını kontrol et
-            if (soundStream == null) {
-                System.out.println("Ses dosyası bulunamadı!");
-                return;
-            }
+        JMenuBar menuBar = new JMenuBar();
+        JMenu gameMenu = new JMenu("Game");
+        JMenuItem exitMenuItem = new JMenuItem("Exit");
+        exitMenuItem.addActionListener(e -> confirmExit());
+        gameMenu.add(exitMenuItem);
+        menuBar.add(gameMenu);
+        setJMenuBar(menuBar);
 
-            // Ses dosyasını bir AudioInputStream'e dönüştür
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundStream);
+        // Uygulama başladığında LoginPanel'i göster
+        loginPanel = new LoginPanel();
+        loginPanel.setStartButtonListener(e -> {
+            // LoginPanel'den GamePanel'e geçerken
+            // LoginPanel'i kaldır ve GamePanel'i ekle
+            getContentPane().remove(loginPanel);
+            startGame((String) e.getActionCommand());
+        });
+        add(loginPanel, BorderLayout.CENTER);
 
-            // Ses dosyasını bir Clip'e yükle
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioStream);
+        setVisible(true);
+        // Uygulama başlangıcında herhangi bir müzik çalma komutu yok
+    }
 
-            // Ses çal
-            clip.start();
+    private void startGame(String playerName) {
+        // GamePanel'i oluştur ve ana menü durumunda başlat
+        gamePanel = new GamePanel(playerName); // GamePanel constructor inMenu = true olarak başlatıyor
+        getContentPane().add(gamePanel, BorderLayout.CENTER); // GamePanel'i ekle
+        revalidate();
+        repaint();
+        gamePanel.requestFocusInWindow(); // Oyun paneline odaklanmayı sağlıyoruz
 
-            // Ses bitene kadar bekle
-            while (!clip.isRunning())
-                Thread.sleep(10);
-
-            while (clip.isRunning())
-                Thread.sleep(10);
-
-            clip.close();
-
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | InterruptedException e) {
-            // Hata mesajlarını al ve yazdır
-            System.out.println("Hata oluştu: ");
-            e.printStackTrace();
+        // GamePanel eklendikten sonra ve menü durumundayken ana menü müziğini başlat
+        // Bu, LoginPanel'den sonra ana menünün ilk göründüğünde müziğin başlamasını sağlar.
+        if (gamePanel.isInMenu()) { // GamePanel'in menüde olup olmadığını kontrol et
+            SoundPlayer.playMainMenuMusic();
         }
     }
+
+
+    private void confirmExit() {
+        int result = JOptionPane.showConfirmDialog(this, "Are you sure you want to exit?", "Exit Confirmation", JOptionPane.YES_NO_OPTION);
+        if (result == JOptionPane.YES_OPTION) {
+            SoundPlayer.stopBackgroundMusic(); // Uygulama kapanırken müziği durdur
+            System.exit(0);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(PongGame::new);
+    }
 }
-
-
-

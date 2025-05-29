@@ -1,4 +1,3 @@
-
 public class Paddle {
     public int x, y;
     public int width, height;
